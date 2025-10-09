@@ -215,5 +215,5 @@ Yes, use the **traditional** path (`install.sh`). HM requires Nix.
 
 ## License
 
-MIT (or your preference).
+MIT
 
