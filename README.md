@@ -1,27 +1,11 @@
 # shared-nvim — one Neovim config, two ways (Home-Manager **and** traditional)
 
-A single public repo that you can use:
+A single public repo you can use:
 
-* **Traditional**: `~/.config/nvim` with `lazy.nvim` managing plugins.
-* **Home-Manager (HM)**: Nix manages plugins (`pkgs.vimPlugins`), HM injects the *same* Lua via `extraLuaConfig`/`toLuaFile`.
-  No HM symlink to `~/.config/nvim` is required (Pattern A).
+* **Traditional:** `~/.config/nvim` with `lazy.nvim` managing plugins.
+* **Home-Manager (Pattern A):** Nix installs plugins (`pkgs.vimPlugins`) and **reads the same Lua files** from this repo via `builtins.readFile`. No HM symlink to `~/.config/nvim` required.
 
-The Lua code (options, keymaps, per-plugin setup) lives here once and is consumed by both paths.
-
----
-
-## TL;DR
-
-* **Traditional**:
-
-  ```bash
-  git clone https://github.com/<you>/shared-nvim.git
-  cd shared-nvim && ./traditional/install.sh
-  nvim   # lazy.nvim bootstraps plugins on first run
-  ```
-
-* **Home-Manager** (Nix):
-  Import `home-manager/nvim.nix` in your HM config, set `repoRoot` to this repo’s path, and `home-manager switch`.
+All editor/Lua config lives here once and is consumed by both paths.
 
 ---
 
@@ -30,188 +14,155 @@ The Lua code (options, keymaps, per-plugin setup) lives here once and is consume
 ```
 shared-nvim/
 ├─ README.md
-├─ nvim/                         # shared runtime (Lua used by both paths)
-│  ├─ init.lua                   # only runs plugin bootstrap in *traditional* mode
+├─ nvim/                         # shared runtime (Lua used by both)
+│  ├─ init.lua                   # only bootstraps plugins in traditional mode
 │  └─ lua/
 │     ├─ core/
 │     │  ├─ options.lua
 │     │  └─ keymaps.lua
-│     └─ plugins/               # per-plugin configs (safe to require from both)
+│     └─ plugins/
 │        ├─ lsp.lua
 │        ├─ cmp.lua
 │        ├─ telescope.lua
 │        ├─ treesitter.lua
 │        └─ other.lua
 ├─ traditional/
-│  ├─ install.sh                 # symlink nvim/ to ~/.config/nvim and bootstrap lazy.nvim
-│  └─ lazy.lua                   # plugin *declarations* for lazy.nvim (no config here)
+│  ├─ install.sh                 # links ./nvim -> ~/.config/nvim and bootstraps lazy.nvim
+│  └─ lazy.lua                   # plugin declarations for lazy.nvim (no config here)
 └─ home-manager/
-   └─ nvim.nix                   # HM module that reads the same Lua and installs plugins via nix
+   └─ nvim.nix                   # HM module that reads Lua from this repo and installs plugins via nix
 ```
 
-> The **same** `nvim/lua/plugins/*.lua` files configure plugins in both paths.
-> In traditional mode we `require()` them from `init.lua`.
-> In HM mode we `builtins.readFile` them into `programs.neovim.plugins.[].config`.
+> In **traditional** mode, `init.lua` requires `lua/plugins/*.lua`.
+> In **HM** mode, the HM module injects those same files with `toLuaFile (repoRoot + "/…")`.
 
 ---
 
 ## Traditional install
 
-1. Clone this repo anywhere, then:
-
 ```bash
+git clone https://github.com/<you>/shared-nvim.git
 cd shared-nvim
 ./traditional/install.sh
+nvim   # lazy.nvim installs plugins on first run
 ```
-
-2. Start Neovim:
-
-```bash
-nvim
-```
-
-* First run clones `lazy.nvim` and installs plugins listed in `traditional/lazy.lua`.
-* Heavy/native plugins (e.g. `telescope-fzf-native`) may need `make`. If `make` isn’t available, the entry is skipped (see `cond` in `lazy.lua` if you want that behavior).
 
 ---
 
-## Home-Manager install (Pattern A)
+## Home-Manager install (as a **non-flake** flake input)
 
-You **do not** need HM to stage `~/.config/nvim`. HM will:
+This repo doesn’t need to be a flake. Consume it as a *non-flake* input and import the module file from the input.
 
-* Install Neovim & plugins from Nix.
-* Inject the same Lua from this repo via heredocs.
-
-Use the provided module and point `repoRoot` to this repo’s path (absolute or relative inside your monorepo).
-
-**`home-manager/nvim.nix` (included here) expects this variable:**
+### 1) Add the input in your **system flake**
 
 ```nix
-# inside home-manager/nvim.nix (edit this in your copy)
-let
-  # Set this to where *this* repo lives relative to your HM module.
-  repoRoot = ../.;  # adjust to your tree
-in
+# flake.nix (top-level of your system repo)
 {
-  programs.neovim = {
-    enable = true;
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    home-manager.url = "github:nix-community/home-manager/release-25.05";
 
-    # Let init.lua know we're under HM so it *won't* do lazy.nvim bootstrap
-    extraLuaConfig = ''
-      vim.g.__hm_nvim = true
-      ${builtins.readFile (repoRoot + "/nvim/lua/core/options.lua")}
-      ${builtins.readFile (repoRoot + "/nvim/lua/core/keymaps.lua")}
-    '';
-
-    # Runtime tools you want on PATH
-    extraPackages = with pkgs; [
-      xclip wl-clipboard
-      lua-language-server nixd pyright
-      ripgrep
-    ];
-
-    # Plugins installed by Nix; configs are pulled from the same repo files:
-    plugins = with pkgs.vimPlugins; [
-      { plugin = nvim-lspconfig; config = "lua <<EOF\n" + builtins.readFile (repoRoot + "/nvim/lua/plugins/lsp.lua") + "\nEOF\n"; }
-      { plugin = comment-nvim;   config = ''lua <<EOF
-        require("Comment").setup()
-      EOF
-      ''; }
-      { plugin = gruvbox-nvim;   config = "colorscheme gruvbox"; }
-
-      neodev-nvim
-
-      nvim-cmp
-      { plugin = nvim-cmp;       config = "lua <<EOF\n" + builtins.readFile (repoRoot + "/nvim/lua/plugins/cmp.lua") + "\nEOF\n"; }
-
-      { plugin = telescope-nvim; config = "lua <<EOF\n" + builtins.readFile (repoRoot + "/nvim/lua/plugins/telescope.lua") + "\nEOF\n"; }
-      telescope-fzf-native-nvim
-
-      cmp_luasnip
-      cmp-nvim-lsp
-      luasnip
-      friendly-snippets
-
-      lualine-nvim
-      nvim-web-devicons
-
-      {
-        plugin = (nvim-treesitter.withPlugins (p: [
-          p.tree-sitter-nix p.tree-sitter-vim p.tree-sitter-bash
-          p.tree-sitter-lua p.tree-sitter-python
-        ]));
-        config = "lua <<EOF\n" + builtins.readFile (repoRoot + "/nvim/lua/plugins/treesitter.lua") + "\nEOF\n";
-      }
-
-      vim-nix
-    ];
+    # NOTE: non-flake input (flake = false)
+    sharedNvim = {
+      url = "github:<you>/shared-nvim";
+      flake = false;
+    };
   };
 
-  programs.home-manager.enable = true;
+  outputs = { self, nixpkgs, home-manager, sharedNvim, ... }@inputs: {
+    nixosConfigurations.laptop = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      # Make `inputs` available to modules:
+      specialArgs = { inherit inputs; };
+      modules = [
+        home-manager.nixosModules.home-manager
+        ./hosts/laptop/configuration.nix
+      ];
+    };
+  };
 }
 ```
 
-**Import it** from your user’s HM config (NixOS or standalone):
+### 2) Import this repo’s HM module in your **home.nix**
 
 ```nix
-{ ... }:
+# home.nix (your user HM module)
+{ config, pkgs, inputs, ... }:
 {
   imports = [
-    # If this repo is a subdir of your big system repo, point to it directly:
-    ./path/to/shared-nvim/home-manager/nvim.nix
+    (inputs.sharedNvim + "/home-manager/nvim.nix")
   ];
 }
 ```
 
-Then activate:
+> Inside `home-manager/nvim.nix`, the module sets:
+>
+> ```nix
+> repoRoot = inputs.sharedNvim; # points at this repo
+> ```
+>
+> and uses `builtins.readFile (repoRoot + "/nvim/lua/...")` for the shared Lua.
+
+### 3) Update / override the input when you change this repo
+
+Pinned inputs won’t auto-refresh.
 
 ```bash
-home-manager switch
-# or if embedded in a NixOS module, `sudo nixos-rebuild switch`
+# update the pin in flake.lock
+nix flake update --update-input sharedNvim
+
+# or, while developing locally, override without touching the lock:
+sudo nixos-rebuild test --flake .#laptop \
+  --override-input sharedNvim path:/absolute/path/to/shared-nvim
 ```
 
 ---
 
-## How the two paths avoid double-config
+## Verifying which path you’re using
 
-* HM sets `vim.g.__hm_nvim = true` in `extraLuaConfig`.
-* `nvim/init.lua` checks this flag and **skips** `lazy.nvim` bootstrap + `require("plugins.*")` when HM is in charge.
-* HM injects each plugin’s config block via `plugins = [ { plugin = ..., config = "...lua heredoc..." } ]`.
+### HM vs traditional
 
-This keeps responsibilities clean:
+In HM, the module sets `vim.g.__hm_nvim = true`. Check inside Neovim:
 
-* **Traditional** → `init.lua` does plugin bootstrap + `require("plugins/…")`.
-* **HM** → Nix installs plugins and injects configs; `init.lua` only sets core options/keymaps.
+```vim
+:echo get(g:, '__hm_nvim', v:false)
+```
 
----
+* `v:true` → **HM path** (plugins from `/nix/store`).
+* `v:false` → **traditional** (plugins under `~/.local/share/nvim/lazy`).
 
-## Updating plugins
+### Where a plugin came from
 
-* **Traditional**: edit `traditional/lazy.lua`.
-* **HM**: edit the plugin list under `programs.neovim.plugins`.
-* **Configs** (LSP, TS, Telescope, CMP, …) are in `nvim/lua/plugins/*.lua` and shared by both.
+```vim
+:lua print(vim.api.nvim_get_runtime_file('lua/lspconfig/init.lua', false)[1])
+```
 
-Tip: keep the two plugin lists logically in sync. If you add/remove a plugin, update both places.
+* `/nix/store/...` → Nix/HM managed.
+* `~/.local/share/nvim/lazy/...` → traditional/lazy.nvim.
+
+(Optional one-liner command you can keep around:)
+
+```lua
+vim.api.nvim_create_user_command('SharedNvimWhere', function()
+  local hm = (vim.g.__hm_nvim and "HM" or "traditional")
+  local src = vim.api.nvim_get_runtime_file('lua/lspconfig/init.lua', false)[1] or 'N/A'
+  print(('mode=%s | lspconfig=%s'):format(hm, src))
+end, {})
+```
 
 ---
 
 ## Troubleshooting
 
-* **“Plugins configured twice”**: ensure `vim.g.__hm_nvim = true` is set in HM’s `extraLuaConfig`, and that your `init.lua` only `require("plugins.*")` when **not** under HM.
-* **“HM can’t find Lua files”**: fix `repoRoot` in `home-manager/nvim.nix` to the correct path to this repo.
-* **Native plugins failing (fzf-native/treesitter)**: you may need a compiler (`gcc`) at build time; either add it to `home.packages` for HM or remove/guard the plugin.
+* **Path concatenation in Nix:** always parenthesize when passing to your `toLuaFile`:
 
----
+  ```nix
+  toLuaFile (repoRoot + "/nvim/lua/plugins/treesitter.lua")
+  ```
+* **Input name:** avoid hyphens in the input key (`sharedNvim`) or quote everywhere (`inputs."shared-nvim"`).
+* **Folder name:** use `plugins/` vs `plugin/` consistently across repo + Nix paths.
+* **Skip lazy under HM:** ensure `init.lua` only bootstraps lazy.nvim when `not vim.g.__hm_nvim`.
 
-## FAQ
-
-**Why not have HM place this repo at `~/.config/nvim`?**
-You don’t need to for Pattern A. HM reads the same Lua files via `builtins.readFile` and manages plugins itself, while the traditional path uses `lazy.nvim`.
-
-**Can I use this on locked-down systems without Nix?**
-Yes, use the **traditional** path (`install.sh`). HM requires Nix.
-
----
 
 ## License
 
