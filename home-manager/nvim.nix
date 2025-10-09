@@ -42,7 +42,7 @@
 		# Add LSP support
 		{
 			plugin = nvim-lspconfig;
-			config = toLuaFile (repoRoot + "/nvim/lua/plugin/lsp.lua");
+			config = toLuaFile (repoRoot + "/nvim/lua/plugins/lsp.lua");
 		}
 
 		# Nice plugin to make comments better
@@ -61,12 +61,12 @@
 		nvim-cmp
 		{
 			plugin = nvim-cmp;
-			config = toLuaFile (repoRoot + "/nvim/lua/plugin/cmp.lua");
+			config = toLuaFile (repoRoot + "/nvim/lua/plugins/cmp.lua");
 		}
 
 		{
 			plugin = telescope-nvim;
-			config = toLuaFile (repoRoot + "/nvim/lua/plugin/telescope.lua");
+			config = toLuaFile (repoRoot + "/nvim/lua/plugins/telescope.lua");
 		}
 
 		# I believe this is meant to help with performance
@@ -90,7 +90,7 @@
 				p.tree-sitter-lua
 				p.tree-sitter-python
 			]));
-			config = toLuaFile (repoRoot + "/nvim/lua/plugin/treesitter.lua");
+			config = toLuaFile (repoRoot + "/nvim/lua/plugins/treesitter.lua");
 		}
 
 		vim-nix
