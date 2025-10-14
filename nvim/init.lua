@@ -16,8 +16,31 @@ if not is_hm then
     end
     vim.opt.rtp:prepend(lazypath)
 
+    -- resolve ~/.config/nvim symlink to the repo's real path
+    local cfg = vim.fn.stdpath("config")  -- ~/.config/nvim
+    local cfg_real = vim.fn.resolve(cfg)  -- /path/to/shared-nvim/nvim
+    local repo_root = vim.fn.fnamemodify(cfg_real ~= "" and cfg_real or vim.fn.stdpath("config"), ":h")
+    --local spec_path = repo_root .. "/traditional/lazy.lua"
+
+    --local spec = dofile(spec_path) -- load the table from this file
+    --require("lazy").setup(spec)
+
+    vim.g.__shared_nvim_root = repo_root              -- handy to have
+
+    local spec_path = repo_root .. "/traditional/lazy.lua"
+    if vim.loop.fs_stat(spec_path) then
+    local ok, spec = pcall(dofile, spec_path)       -- <— ABSOLUTE; not affected by :cd
+    if ok then
+      require("lazy").setup(spec)
+    else
+      vim.notify("shared-nvim: failed to load spec: " .. spec, vim.log.levels.ERROR)
+    end
+    else
+      vim.notify("shared-nvim: spec file not found at " .. spec_path, vim.log.levels.ERROR)
+    end
+
     -- declare plugins
-    require("lazy").setup(vim.fn.stdpath("config") .. "/../traditional/lazy.lua")
+    --require("lazy").setup(vim.fn.stdpath("config") .. "/../traditional/lazy.lua")
 
     -- run per-plugin configs (same files HM reads with builtins.readFile)
     pcall(function() require("plugins.lsp") end)

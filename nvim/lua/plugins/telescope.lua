@@ -1,5 +1,7 @@
-local telescope = require('telescope')
-local builtin = require('telescope.builtin')
+-- local telescope = require('telescope')
+-- local builtin = require('telescope.builtin')
+local ok, telescope = pcall(require, "telescope")
+if not ok then return end
 
 telescope.setup({
 	extensions = {
@@ -12,5 +14,15 @@ telescope.setup({
     	},
   	},
 })
+
+-- set keymaps *after* telescope is available
+local tb_ok, tb = pcall(require, "telescope.builtin")
+if tb_ok then
+    vim.keymap.set('n', '<leader>pf', tb.find_files, { desc = "Telescope: Find files" })
+    vim.keymap.set('n', '<leader>pg', tb.live_grep,  { desc = "Telescope: Live grep" })
+    vim.keymap.set('n', '<leader>pb', tb.buffers,    { desc = "Telescope: Buffers" })
+    vim.keymap.set('n', '<leader>ph', tb.help_tags,  { desc = "Telescope: Help tags" })
+    vim.keymap.set('n', '<C-p>', tb.git_files,       { desc = "Telescope: Git files" })
+end
 
 telescope.load_extension('fzf')

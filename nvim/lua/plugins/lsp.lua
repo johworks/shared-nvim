@@ -26,28 +26,32 @@ end
 local capabilities = vim.lsp.protocol.make_client_capabilities()
 capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
 
-require('neodev').setup()
-require('lspconfig').lua_ls.setup {
+pcall(function() require('neodev').setup() end)
+
+-- Define/override sever configs
+vim.lsp.config('lua_ls', {
     on_attach = on_attach,
     capabilities = capabilities,
-	root_dir = function()
-        return vim.loop.cwd()
-    end,
+    -- TO-DO: add the P4 root here
+    root_markers = { '.git' },
 	cmd = { "lua-language-server" },
     settings = {
         Lua = {
             workspace = { checkThirdParty = false },
             telemetry = { enable = false },
         },
-    }
-}
+    },
+})
 
-require('lspconfig').nixd.setup {
+vim.lsp.config('nixd', {
     on_attach = on_attach,
     capabilities = capabilities,
-}
+})
 
-require('lspconfig').pyright.setup {
+vim.lsp.config('pyright', {
     on_attach = on_attach,
     capabilities = capabilities,
-}
+})
+
+-- Enable them
+vim.lsp.enable({ 'lua_ls', 'nixd', 'pyright' })
