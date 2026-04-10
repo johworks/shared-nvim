@@ -56,9 +56,9 @@
 			config = "colorscheme gruvbox";
 		}
 
-		neodev-nvim
-
-		nvim-cmp
+		{
+			plugin = neodev-nvim;
+		}
 		{
 			plugin = nvim-cmp;
 			config = toLuaFile (repoRoot + "/nvim/lua/plugins/cmp.lua");
@@ -71,16 +71,30 @@
 
 		# I believe this is meant to help with performance
 		# in large code bases
-		telescope-fzf-native-nvim
+		{
+			plugin = telescope-fzf-native-nvim;
+		}
 
-		cmp_luasnip
-		cmp-nvim-lsp
+		{
+			plugin = cmp_luasnip;
+		}
+		{
+			plugin = cmp-nvim-lsp;
+		}
 
-		luasnip
-		friendly-snippets
+		{
+			plugin = luasnip;
+		}
+		{
+			plugin = friendly-snippets;
+		}
 
-		lualine-nvim
-		nvim-web-devicons
+		{
+			plugin = lualine-nvim;
+		}
+		{
+			plugin = nvim-web-devicons;
+		}
 
 		{
 			plugin = (nvim-treesitter.withPlugins (p: [
@@ -93,7 +107,9 @@
 			config = toLuaFile (repoRoot + "/nvim/lua/plugins/treesitter.lua");
 		}
 
-		vim-nix
+		{
+			plugin = vim-nix;
+		}
 
     ];
 
