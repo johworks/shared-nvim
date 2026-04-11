@@ -1,4 +1,12 @@
-{ config, pkgs, inputs, ... }: 
+{ lib, options, pkgs, inputs, ... }:
+let
+  initLuaConfig = ''
+      -- Tell init.lua we're under Home-Manager so it skips lazy.nvim
+      vim.g.__hm_nvim = true
+      ${builtins.readFile (inputs.shared-nvim + "/nvim/lua/core/options.lua")}
+      ${builtins.readFile (inputs.shared-nvim + "/nvim/lua/core/keymaps.lua")}
+  '';
+in
 {
   # Enable and configure neovim
   programs.neovim = 
@@ -7,7 +15,7 @@
     toLuaFile = file: "lua << EOF \n${builtins.readFile file}\nEOF\n";
     repoRoot = inputs.shared-nvim; 
   in
-  {
+  ({
     enable = true;
     withRuby = true;
     withPython3 = true;
@@ -15,14 +23,6 @@
     viAlias = true;
     vimAlias = true;
     vimdiffAlias = true;
-
-    # Load options first
-    initLua = ''
-        -- Tell init.lua we're under Home-Manager so it skips lazy.nvim
-        vim.g.__hm_nvim = true
-        ${builtins.readFile (repoRoot + "/nvim/lua/core/options.lua")}
-        ${builtins.readFile (repoRoot + "/nvim/lua/core/keymaps.lua")}
-    '';
 
     # Package dependencies
     extraPackages = with pkgs; [
@@ -121,5 +121,9 @@
 
     ];
 
-  };  # End nvim configuations
+  } // lib.optionalAttrs (options.programs.neovim ? initLua) {
+    initLua = initLuaConfig;
+  } // lib.optionalAttrs (!(options.programs.neovim ? initLua)) {
+    extraLuaConfig = initLuaConfig;
+  });  # End nvim configuations
 }
