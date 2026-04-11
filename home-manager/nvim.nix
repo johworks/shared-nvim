@@ -9,13 +9,15 @@
   in
   {
     enable = true;
+    withRuby = true;
+    withPython3 = true;
 
     viAlias = true;
     vimAlias = true;
     vimdiffAlias = true;
 
     # Load options first
-    extraLuaConfig = ''
+    initLua = ''
         -- Tell init.lua we're under Home-Manager so it skips lazy.nvim
         vim.g.__hm_nvim = true
         ${builtins.readFile (repoRoot + "/nvim/lua/core/options.lua")}
