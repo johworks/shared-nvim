@@ -42,17 +42,20 @@
 		# Add LSP support
 		{
 			plugin = nvim-lspconfig;
+			type = "viml";
 			config = toLuaFile (repoRoot + "/nvim/lua/plugins/lsp.lua");
 		}
 
 		# Nice plugin to make comments better
 		{
 			plugin = comment-nvim;
+			type = "viml";
 			config = toLua "require(\"Comment\").setup()";
 		}
 
 		{
 			plugin = gruvbox-nvim;
+			type = "viml";
 			config = "colorscheme gruvbox";
 		}
 
@@ -61,11 +64,13 @@
 		}
 		{
 			plugin = nvim-cmp;
+			type = "viml";
 			config = toLuaFile (repoRoot + "/nvim/lua/plugins/cmp.lua");
 		}
 
 		{
 			plugin = telescope-nvim;
+			type = "viml";
 			config = toLuaFile (repoRoot + "/nvim/lua/plugins/telescope.lua");
 		}
 
@@ -104,6 +109,7 @@
 				p.tree-sitter-lua
 				p.tree-sitter-python
 			]));
+			type = "viml";
 			config = toLuaFile (repoRoot + "/nvim/lua/plugins/treesitter.lua");
 		}
 
