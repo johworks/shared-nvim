@@ -110,6 +110,10 @@ in
 				p.tree-sitter-bash
 				p.tree-sitter-lua
 				p.tree-sitter-python
+				p.tree-sitter-vimdoc
+				p.tree-sitter-query
+				p.tree-sitter-regex
+				p.tree-sitter-systemverilog
 			]));
 			type = "viml";
 			config = toLuaFile (repoRoot + "/nvim/lua/plugins/treesitter.lua");

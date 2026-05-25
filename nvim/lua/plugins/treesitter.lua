@@ -1,15 +1,17 @@
 local ok, ts = pcall(require, "nvim-treesitter.configs")
 if not ok then return end
 
-local is_hm = vim.g__hm_nvim == true
+local is_hm = vim.g.__hm_nvim == true
 
 -- Minimal base needed so the runtime ftplugins don't crash on first open
 local base = { "lua", "vim", "vimdoc", "query", "regex" }
 
 ts.setup({
-  -- HM: Nix provides parsers, so enumerate them explicitly (base + your langs)
+  parser_install_dir = is_hm and (vim.fn.stdpath("data") .. "/treesitter-parsers") or nil,
+
+  -- HM: Nix provides parsers through withPlugins, so do not run the installer.
   -- Traditional: install the base immediately; other langs can auto-install later
-  ensure_installed = is_hm and { "lua", "nix", "bash", "vim", "python", "verilog" } or base,
+  ensure_installed = is_hm and {} or base,
   auto_install = not is_hm,   -- traditional = true, HM = false
   sync_install = false,
 
