@@ -1,7 +1,8 @@
 local ok, ts = pcall(require, "nvim-treesitter.configs")
 if not ok then return end
 
-local is_hm = vim.g.__hm_nvim == true
+local is_nix_packpath = vim.o.packpath:find("/nix/store", 1, true) ~= nil
+local is_hm = vim.g.__hm_nvim == true or is_nix_packpath
 
 -- Minimal base needed so the runtime ftplugins don't crash on first open
 local base = { "lua", "vim", "vimdoc", "query", "regex" }
